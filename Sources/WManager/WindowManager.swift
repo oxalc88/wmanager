@@ -9,24 +9,27 @@ final class WindowManager {
 
     func tileLeft() {
         guard let target = focusedWindowTarget() else { return }
-        applyFrame(TileFrames.halfLeft(in: target.screenFrame), to: target.window)
+        let frame = TileFrames.halfLeft(in: target.visibleFrame)
+        applyFrame(frame, to: target.window, screenFrame: target.screen.frame)
     }
 
     func tileRight() {
         guard let target = focusedWindowTarget() else { return }
-        applyFrame(TileFrames.halfRight(in: target.screenFrame), to: target.window)
+        let frame = TileFrames.halfRight(in: target.visibleFrame)
+        applyFrame(frame, to: target.window, screenFrame: target.screen.frame)
     }
 
     func maximize() {
         guard let target = focusedWindowTarget() else { return }
-        applyFrame(TileFrames.maximized(in: target.screenFrame), to: target.window)
+        let frame = TileFrames.maximized(in: target.visibleFrame)
+        applyFrame(frame, to: target.window, screenFrame: target.screen.frame)
     }
 
     func applySlots(_ slots: Set<Slot>) {
         guard !slots.isEmpty else { return }
         guard let target = focusedWindowTarget() else { return }
 
-        let frames = Slot.frames(in: target.screenFrame)
+        let frames = Slot.frames(in: target.visibleFrame)
         var union = CGRect.null
         for slot in slots {
             guard let slotFrame = frames[slot] else { continue }
@@ -34,15 +37,15 @@ final class WindowManager {
         }
 
         if !union.isNull {
-            applyFrame(union, to: target.window)
+            applyFrame(union, to: target.window, screenFrame: target.screen.frame)
         }
     }
 
-    private func focusedWindowTarget() -> (window: AXUIElement, screenFrame: CGRect)? {
+    private func focusedWindowTarget() -> (window: AXUIElement, screen: NSScreen, visibleFrame: CGRect)? {
         guard let window = focusedWindow() else { return nil }
         guard let windowFrame = windowFrame(window) else { return nil }
         guard let screen = screenForWindow(windowFrame) else { return nil }
-        return (window, screen.visibleFrame)
+        return (window, screen, screen.visibleFrame)
     }
 
     private func focusedWindow() -> AXUIElement? {
@@ -97,9 +100,10 @@ final class WindowManager {
         return CGRect(origin: position, size: size)
     }
 
-    private func applyFrame(_ frame: CGRect, to window: AXUIElement) {
-        var position = frame.origin
-        var size = frame.size
+    private func applyFrame(_ frame: CGRect, to window: AXUIElement, screenFrame: CGRect) {
+        let axFrame = WindowCoordinateConverter.axFrame(fromCocoa: frame, in: screenFrame)
+        var position = axFrame.origin
+        var size = axFrame.size
 
         if let positionValue = AXValueCreate(.cgPoint, &position) {
             AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
