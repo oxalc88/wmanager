@@ -10,6 +10,8 @@
 - `swift build` compiles the executable.
 - `swift run` launches the background app; the first run requests Accessibility access.
 - `swift test` runs XCTest (add tests under `Tests/WManagerTests/`).
+- `swift build -c release` builds the release binary at `.build/release/WManager`.
+- `scripts/install-launchagent.sh` installs a user LaunchAgent to run the release binary at login.
 
 ## Coding Style & Naming Conventions
 - Use 4-space indentation and follow Swift API Design Guidelines.

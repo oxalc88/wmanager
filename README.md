@@ -17,6 +17,27 @@ swift run
 The first run will prompt for Accessibility permission. Grant it in
 System Settings -> Privacy & Security -> Accessibility.
 
+## Run without `swift run`
+Build once and run the release binary directly:
+```bash
+swift build -c release
+.build/release/WManager
+```
+
+## Launch at login (LaunchAgent)
+Install a user LaunchAgent that runs the release binary on login:
+```bash
+scripts/install-launchagent.sh
+```
+
+To unload it later:
+```bash
+launchctl unload "$HOME/Library/LaunchAgents/com.wmanager.plist"
+```
+
+If you move the repo or rebuild to a different location, re-run the script so
+the LaunchAgent points at the correct binary path.
+
 ## Hotkeys (default)
 - Command + Option + Left: left half
 - Command + Option + Right: right half
