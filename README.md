@@ -9,6 +9,12 @@ utility: global hotkeys, simple layouts, no window tracking daemon.
   multiple slots in sequence.
 - A lightweight overlay to preview the grid.
 
+## Inspiration
+This project is inspired by the Omakub tiling manager and its keyboard-driven
+window placement workflow. See the manual here: [Omakub Manual](https://learn.omacom.io/1/read/39/tiling).
+
+![Omakub tiling manager](./docs/images/omakub-tiling-manager.png)
+
 ## Build and run
 ```bash
 swift run
@@ -59,3 +65,8 @@ You can change modifiers, gaps, and colors in `Sources/WManager/Settings.swift`.
 - Full-screen apps are not managed.
 - If you switch to Command-only modifiers, expect conflicts with common app
   shortcuts (e.g., Command + Left/Right in browsers).
+
+## Screenshots
+![WManager overlay grid](./docs/images/wmanager-overlay-grid.png)
+![WManager slot selection](./docs/images/wmanager-slot-selection.png)
+![WManager layout result](./docs/images/wmanager-layout-result.png)
