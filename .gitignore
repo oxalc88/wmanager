@@ -1,3 +1,14 @@
 .DS_Store
 .build/
 DerivedData/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+*.xcuserdatad/
+*.xcuserdata/
+.cache/
+.tmp/
+.home/
+logs/
+Tests/results/
+*.log
