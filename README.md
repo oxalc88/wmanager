@@ -50,6 +50,7 @@ the LaunchAgent points at the correct binary path.
 - Command + Option + Up: maximize (within the visible frame)
 - Command + Option + T: toggle the 6-slot grid (Esc to dismiss)
 - Q/W/E/A/S/D: choose slots while the grid is visible
+- Enter: dismiss the grid
 - Escape: dismiss the grid
 
 While the grid is visible, switch focus (Command + Tab or click another window)

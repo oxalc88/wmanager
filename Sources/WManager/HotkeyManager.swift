@@ -111,13 +111,12 @@ final class HotkeyManager {
     }
 
     private func handleOverlayKey(event: CGEvent, keyCode: CGKeyCode) -> Unmanaged<CGEvent>? {
-        if keyCode == KeyCode.escape {
+        switch OverlayKeyAction.action(for: keyCode) {
+        case .dismiss:
             clearOverlaySelection()
             overlayController.hide()
             return nil
-        }
-
-        if let slot = Slot.fromKeyCode(keyCode) {
+        case .slot(let slot):
             let result = overlaySelection.select(slot, maxSelectionCount: Settings.overlaySelectionMaxCount)
             overlayController.updateSelection(result.selection)
             windowManager.applySlots(result.selection)
@@ -126,10 +125,10 @@ final class HotkeyManager {
                 overlaySelection.clear()
             }
             return nil
+        case .passthrough:
+            clearOverlaySelection()
+            return Unmanaged.passUnretained(event)
         }
-
-        clearOverlaySelection()
-        return Unmanaged.passUnretained(event)
     }
 
     private func clearOverlaySelection() {

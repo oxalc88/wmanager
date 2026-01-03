@@ -14,4 +14,5 @@ enum KeyCode {
     static let downArrow: CGKeyCode = 125
     static let upArrow: CGKeyCode = 126
     static let escape: CGKeyCode = 53
+    static let returnKey: CGKeyCode = 36
 }
