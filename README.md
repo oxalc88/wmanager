@@ -9,6 +9,10 @@ utility: global hotkeys, simple layouts, no window tracking daemon.
   multiple slots in sequence.
 - A lightweight overlay to preview the grid.
 
+## Requirements
+- macOS 13+ (per `Package.swift`).
+- Tested with Swift 6.2.3 (Xcode 26.2 toolchain).
+
 ## Inspiration
 This project is inspired by the Omakub tiling manager and its keyboard-driven
 window placement workflow. See the manual here: [Omakub Manual](https://learn.omacom.io/1/read/39/tiling).
