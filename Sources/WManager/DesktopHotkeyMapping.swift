@@ -1,6 +1,18 @@
 import CoreGraphics
 
 enum DesktopHotkeyMapping {
+    private static let numberKeyCodes: [CGKeyCode] = [
+        KeyCode.one,
+        KeyCode.two,
+        KeyCode.three,
+        KeyCode.four,
+        KeyCode.five,
+        KeyCode.six,
+        KeyCode.seven,
+        KeyCode.eight,
+        KeyCode.nine
+    ]
+
     static func clampedDesktopCount(_ count: Int) -> Int {
         return min(max(count, 1), 9)
     }
@@ -14,17 +26,9 @@ enum DesktopHotkeyMapping {
     }
 
     private static func desktopIndex(for keyCode: CGKeyCode) -> Int? {
-        switch keyCode {
-        case KeyCode.one: return 1
-        case KeyCode.two: return 2
-        case KeyCode.three: return 3
-        case KeyCode.four: return 4
-        case KeyCode.five: return 5
-        case KeyCode.six: return 6
-        case KeyCode.seven: return 7
-        case KeyCode.eight: return 8
-        case KeyCode.nine: return 9
-        default: return nil
+        guard let index = numberKeyCodes.firstIndex(of: keyCode) else {
+            return nil
         }
+        return index + 1
     }
 }
