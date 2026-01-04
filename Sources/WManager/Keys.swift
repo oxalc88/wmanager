@@ -1,6 +1,16 @@
 import CoreGraphics
 
 enum KeyCode {
+    static let one: CGKeyCode = 18
+    static let two: CGKeyCode = 19
+    static let three: CGKeyCode = 20
+    static let four: CGKeyCode = 21
+    static let five: CGKeyCode = 23
+    static let six: CGKeyCode = 22
+    static let seven: CGKeyCode = 26
+    static let eight: CGKeyCode = 28
+    static let nine: CGKeyCode = 25
+
     static let a: CGKeyCode = 0
     static let s: CGKeyCode = 1
     static let d: CGKeyCode = 2
