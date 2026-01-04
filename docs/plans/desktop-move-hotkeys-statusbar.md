@@ -11,9 +11,9 @@
 - Add tests that depend on Accessibility or Mission Control.
 
 ## Open questions
-- Confirm the exact modifier combo for "Super": likely Command on macOS, but could be Control or Option.
-- When moving a window to another desktop, should WManager also switch to that desktop or stay on the current one?
-- Should the move hotkeys override macOS screenshot shortcuts (Command + Shift + 3/4/5)?
+- Modifier combo: use Control + Shift + Number for moving windows.
+- Behavior after moving: also switch to the target desktop after moving the window.
+- Shortcut conflicts: prefer Control + Shift + Number for moves since desktop switching uses Control + Number; check for collisions before finalizing.
 
 ## Technical approach
 ### 1) Desktop move hotkeys
