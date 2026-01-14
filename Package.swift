@@ -10,7 +10,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "WManager",
-            path: "Sources/WManager"
+            path: "Sources/WManager",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "WManagerTests",
