@@ -34,4 +34,15 @@ final class OverlaySelectionStateTests: XCTestCase {
         XCTAssertEqual(second.selection, [topLeft, bottomRight])
         XCTAssertTrue(second.reachedLimit)
     }
+
+    func testSelectWithNilOrZeroMaxDoesNotReachLimit() {
+        var state = OverlaySelectionState()
+        let cell = GridCell.cell(row: 0, column: 0)!
+
+        let nilResult = state.select(cell, maxSelectionCount: nil)
+        XCTAssertFalse(nilResult.reachedLimit)
+
+        let zeroResult = state.select(cell, maxSelectionCount: 0)
+        XCTAssertFalse(zeroResult.reachedLimit)
+    }
 }

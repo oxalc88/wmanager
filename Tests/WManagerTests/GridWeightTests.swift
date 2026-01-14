@@ -47,4 +47,17 @@ final class GridWeightTests: XCTestCase {
         XCTAssertEqual(weights.columnProportions, [0.25, 0.5, 0.25])
         XCTAssertEqual(weights.rowProportions, [0.75, 0.25])
     }
+
+    func testNormalizedPadsAndClamps() {
+        let weights = GridWeight(columns: [9], rows: [-1])
+        let normalized = weights.normalized(maxColumns: 3, maxRows: 2)
+        XCTAssertEqual(normalized.columns, [5, 0, 0])
+        XCTAssertEqual(normalized.rows, [0, 0])
+    }
+
+    func testProportionsEmptyWhenAllZero() {
+        let weights = GridWeight(columns: [0, 0], rows: [0])
+        XCTAssertEqual(weights.columnProportions, [])
+        XCTAssertEqual(weights.rowProportions, [])
+    }
 }

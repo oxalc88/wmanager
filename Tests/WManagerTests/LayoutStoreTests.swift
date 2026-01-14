@@ -73,4 +73,43 @@ final class LayoutStoreTests: XCTestCase {
         let perDesktop = LayoutStore.layoutConfig(reloaded, index: 0, scope: .thisDesktop, spaceID: spaceID)
         XCTAssertEqual(perDesktop.weights, config.weights.normalized(maxColumns: GridCell.maxColumns, maxRows: GridCell.maxRows))
     }
+
+    func testActiveLayoutIndexFallsBackToGlobal() {
+        var state = LayoutStore.defaultState()
+        state.globalActiveIndex = 2
+        let index = LayoutStore.activeLayoutIndex(state, scope: .thisDesktop, spaceID: CGSSpaceID(99))
+        XCTAssertEqual(index, 2)
+    }
+
+    func testActiveLayoutIndexClampsOutOfRangeValues() {
+        var state = LayoutStore.defaultState()
+        state.globalActiveIndex = 99
+        XCTAssertEqual(LayoutStore.activeLayoutIndex(state, scope: .allDesktops, spaceID: nil), Settings.layoutPresetCount - 1)
+
+        state.globalActiveIndex = -5
+        XCTAssertEqual(LayoutStore.activeLayoutIndex(state, scope: .allDesktops, spaceID: nil), 0)
+    }
+
+    func testLayoutConfigFallbackUsesThisDesktopScope() {
+        let state = LayoutStore.defaultState()
+        let config = LayoutStore.layoutConfig(state, index: 0, scope: .thisDesktop, spaceID: CGSSpaceID(101))
+        XCTAssertEqual(config.scope, .thisDesktop)
+    }
+
+    func testUpdateLayoutConfigIgnoresNilSpaceID() {
+        var state = LayoutStore.defaultState()
+        let config = LayoutConfig(weights: GridWeight(columns: [2, 0, 0, 0], rows: [1, 0, 0]), scope: .thisDesktop)
+        LayoutStore.updateLayoutConfig(config, index: 0, scope: .thisDesktop, spaceID: nil, in: &state)
+        XCTAssertTrue(state.desktopLayouts.isEmpty)
+    }
+
+    func testLoadNormalizesLayoutCounts() {
+        var state = LayoutStore.defaultState()
+        let config = LayoutConfig(weights: GridWeight(columns: [1, 0, 0, 0], rows: [1, 0, 0]), scope: .allDesktops)
+        state.globalLayouts = Array(repeating: config, count: Settings.layoutPresetCount + 2)
+        LayoutStore.save(state, userDefaults: defaults)
+
+        let reloaded = LayoutStore.load(userDefaults: defaults)
+        XCTAssertEqual(reloaded.globalLayouts.count, Settings.layoutPresetCount)
+    }
 }
