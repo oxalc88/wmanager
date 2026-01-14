@@ -1,0 +1,32 @@
+import SwiftUI
+
+enum SettingsPalette {
+    static let canvas = Color(.sRGB, white: 0.96, opacity: 1)
+    static let windowBackground = Color(.sRGB, white: 0.98, opacity: 1)
+    static let sidebarBackground = Color(.sRGB, white: 0.95, opacity: 1)
+    static let sidebarFooter = Color(.sRGB, white: 0.94, opacity: 1)
+    static let headerBackground = Color(.sRGB, white: 0.99, opacity: 1)
+    static let divider = Color(.sRGB, white: 0.9, opacity: 1)
+    static let panelBackground = Color(.sRGB, white: 0.98, opacity: 1)
+    static let panelBorder = Color(.sRGB, white: 0.9, opacity: 1)
+    static let controlBackground = Color(.sRGB, white: 0.98, opacity: 1)
+    static let controlBorder = Color(.sRGB, white: 0.82, opacity: 1)
+    static let gridBackground = Color(.sRGB, white: 0.96, opacity: 1)
+    static let gridBorder = Color(.sRGB, white: 0.88, opacity: 1)
+    static let stepperBackground = Color.white
+    static let stepperBorder = Color(.sRGB, white: 0.82, opacity: 1)
+    static let stepperButtonBackground = Color(.sRGB, white: 0.95, opacity: 1)
+    static let cellBackground = Color(.sRGB, red: 0.12, green: 0.16, blue: 0.22, opacity: 1)
+    static let cellBorder = Color(.sRGB, white: 0.2, opacity: 1)
+    static let cellText = Color(.sRGB, white: 0.86, opacity: 1)
+    static let accent = Color(.sRGB, red: 0.0, green: 0.48, blue: 1.0, opacity: 1)
+    static let destructive = Color(.sRGB, red: 0.9, green: 0.25, blue: 0.25, opacity: 1)
+    static let textPrimary = Color(.sRGB, white: 0.2, opacity: 1)
+    static let textSecondary = Color(.sRGB, white: 0.45, opacity: 1)
+    static let textDisabled = Color(.sRGB, white: 0.65, opacity: 1)
+    static let segmentBackground = Color(.sRGB, white: 0.9, opacity: 1)
+    static let segmentSelected = Color(.sRGB, white: 1.0, opacity: 1)
+    static let segmentBorder = Color(.sRGB, white: 0.85, opacity: 1)
+    static let segmentText = Color(.sRGB, white: 0.45, opacity: 1)
+    static let segmentTextSelected = Color(.sRGB, white: 0.2, opacity: 1)
+}

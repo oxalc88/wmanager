@@ -16,6 +16,11 @@ let package = Package(
             name: "WManagerTests",
             dependencies: ["WManager"],
             path: "Tests/WManagerTests"
+        ),
+        .testTarget(
+            name: "WManagerUITests",
+            dependencies: ["WManager"],
+            path: "Tests/WManagerUITests"
         )
     ]
 )
