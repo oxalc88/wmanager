@@ -65,7 +65,9 @@ The grid auto-closes after selecting two slots by default; adjust
 `overlaySelectionMaxCount` in `Sources/WManager/Settings.swift` if you prefer a
 different limit or `nil` for no limit.
 
-You can change modifiers, gaps, and colors in `Sources/WManager/Settings.swift`.
+Shortcut bindings for window actions and layout presets can be updated in
+Settings -> Shortcuts. Overlay grid keys and dismiss keys are fixed. You can
+change modifiers, gaps, and colors in `Sources/WManager/Settings.swift`.
 
 ## Layout settings
 Open the status bar menu and choose Settings... to configure layout presets,

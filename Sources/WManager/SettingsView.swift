@@ -7,6 +7,11 @@ struct SettingsView: View {
     @State private var scope: LayoutScope
     @State private var draftWeights: GridWeight
     @State private var isEditing: Bool
+    @State private var selectedSection: SidebarSection
+    @State private var shortcutsState: ShortcutsState
+    @State private var draftShortcuts: [ShortcutAction: ShortcutDefinition]
+    @State private var isEditingShortcuts: Bool
+    @State private var recordingShortcut: ShortcutAction?
 
     init() {
         let state = LayoutStore.load()
@@ -21,11 +26,18 @@ struct SettingsView: View {
         let selectedIndex = LayoutStore.activeLayoutIndex(state, scope: initialScope, spaceID: spaceID)
         let config = LayoutStore.layoutConfig(state, index: selectedIndex, scope: initialScope, spaceID: spaceID)
 
+        let shortcuts = ShortcutsStore.load()
+
         _storeState = State(initialValue: state)
         _scope = State(initialValue: initialScope)
         _selectedLayoutIndex = State(initialValue: selectedIndex)
         _draftWeights = State(initialValue: config.weights.normalized(maxColumns: GridCell.maxColumns, maxRows: GridCell.maxRows))
         _isEditing = State(initialValue: false)
+        _selectedSection = State(initialValue: .grid)
+        _shortcutsState = State(initialValue: shortcuts)
+        _draftShortcuts = State(initialValue: shortcuts.shortcuts)
+        _isEditingShortcuts = State(initialValue: false)
+        _recordingShortcut = State(initialValue: nil)
     }
 
     var body: some View {
@@ -57,6 +69,19 @@ struct SettingsView: View {
         .onExitCommand {
             cancelAndClose()
         }
+        .onChange(of: selectedSection) { _ in
+            switch selectedSection {
+            case .grid:
+                cancelShortcutsChanges()
+            case .shortcuts:
+                cancelChanges()
+            }
+        }
+        .onChange(of: isEditingShortcuts) { newValue in
+            if !newValue {
+                recordingShortcut = nil
+            }
+        }
     }
 
     private var sidebar: some View {
@@ -76,7 +101,18 @@ struct SettingsView: View {
             .padding(.top, 12)
 
             VStack(alignment: .leading, spacing: 6) {
-                SidebarItem(title: "Grid", systemImage: "square.grid.2x2", isSelected: true)
+                SidebarItem(
+                    title: "Grid",
+                    systemImage: "square.grid.2x2",
+                    isSelected: selectedSection == .grid,
+                    action: { selectedSection = .grid }
+                )
+                SidebarItem(
+                    title: "Shortcuts",
+                    systemImage: "keyboard",
+                    isSelected: selectedSection == .shortcuts,
+                    action: { selectedSection = .shortcuts }
+                )
             }
             .padding(.horizontal, 10)
 
@@ -127,14 +163,36 @@ struct SettingsView: View {
             )
 
             ScrollView {
-                HStack(alignment: .top, spacing: 44) {
-                    gridSection
-                    controlPanel
+                switch selectedSection {
+                case .grid:
+                    gridContent
+                case .shortcuts:
+                    shortcutsContent
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 28)
             }
         }
+    }
+
+    private var gridContent: some View {
+        HStack(alignment: .top, spacing: 44) {
+            gridSection
+            controlPanel
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 28)
+    }
+
+    private var shortcutsContent: some View {
+        ShortcutsView(
+            shortcuts: $draftShortcuts,
+            isEditing: $isEditingShortcuts,
+            recordingAction: $recordingShortcut,
+            validation: shortcutsValidation,
+            onApply: applyShortcutChanges,
+            onCancel: cancelShortcutsChanges
+        )
+        .padding(.horizontal, 32)
+        .padding(.vertical, 28)
     }
 
     private var gridSection: some View {
@@ -289,8 +347,24 @@ struct SettingsView: View {
         isEditing = false
     }
 
+    private func applyShortcutChanges() {
+        guard shortcutsValidation.isValid else { return }
+        let updated = ShortcutsState(shortcuts: draftShortcuts)
+        shortcutsState = updated
+        ShortcutsStore.save(updated)
+        recordingShortcut = nil
+        isEditingShortcuts = false
+    }
+
+    private func cancelShortcutsChanges() {
+        draftShortcuts = shortcutsState.shortcuts
+        recordingShortcut = nil
+        isEditingShortcuts = false
+    }
+
     private func cancelAndClose() {
         cancelChanges()
+        cancelShortcutsChanges()
         if let window = NSApp.keyWindow {
             window.close()
         } else {
@@ -301,26 +375,39 @@ struct SettingsView: View {
     private func currentSpaceID() -> CGSSpaceID? {
         DesktopManager.currentSpaceID(for: nil)
     }
+
+    private var shortcutsValidation: ShortcutsValidationResult {
+        ShortcutsStore.validate(draftShortcuts)
+    }
+}
+
+private enum SidebarSection: String, CaseIterable {
+    case grid
+    case shortcuts
 }
 
 private struct SidebarItem: View {
     let title: String
     let systemImage: String
     let isSelected: Bool
+    let action: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 16)
-            Text(title)
-                .font(.system(size: 13, weight: .medium))
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 16)
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .foregroundColor(isSelected ? .white : SettingsPalette.textSecondary)
+            .background(isSelected ? SettingsPalette.accent : Color.clear)
+            .cornerRadius(8)
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 10)
-        .foregroundColor(isSelected ? .white : SettingsPalette.textSecondary)
-        .background(isSelected ? SettingsPalette.accent : Color.clear)
-        .cornerRadius(8)
+        .buttonStyle(.plain)
     }
 }
 

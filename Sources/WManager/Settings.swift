@@ -1,11 +1,8 @@
 import Cocoa
 
 enum Settings {
-    // Use Command + Option by default to avoid collisions with common app shortcuts.
-    static let hotkeyModifiers: CGEventFlags = [.maskCommand, .maskAlternate]
     static let allowAdditionalModifiers = false
 
-    static let layoutSelectionModifiers: CGEventFlags = [.maskControl, .maskShift]
     static let layoutPresetCount = 4
 
     static let overlayAutoHideSeconds: TimeInterval? = nil

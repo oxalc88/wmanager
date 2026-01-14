@@ -7,6 +7,8 @@ final class HotkeyManager {
     private var runLoopSource: CFRunLoopSource?
     private var overlaySelection = OverlaySelectionState()
     private var overlayLayout: LayoutPreset?
+    private var shortcutsState: ShortcutsState
+    private var shortcutsObserver: NSObjectProtocol?
 
     init(
         windowManager: WindowManager,
@@ -14,6 +16,20 @@ final class HotkeyManager {
     ) {
         self.windowManager = windowManager
         self.overlayController = overlayController
+        self.shortcutsState = ShortcutsStore.load()
+        self.shortcutsObserver = NotificationCenter.default.addObserver(
+            forName: .shortcutsDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.shortcutsState = ShortcutsStore.load()
+        }
+    }
+
+    deinit {
+        if let observer = shortcutsObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     func start() {
@@ -74,11 +90,11 @@ final class HotkeyManager {
 
         let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
 
-        if matchesLayoutSelectionModifiers(event.flags),
-           let layoutIndex = LayoutHotkeyMapping.layoutIndex(
-                for: keyCode,
-                layoutCount: Settings.layoutPresetCount
-           ) {
+        if let layoutIndex = shortcutsState.layoutIndex(
+            for: keyCode,
+            flags: event.flags,
+            allowAdditional: Settings.allowAdditionalModifiers
+        ) {
             setActiveLayout(index: layoutIndex)
             clearOverlaySelection()
             hideOverlay()
@@ -86,36 +102,15 @@ final class HotkeyManager {
         }
 
         if overlayController.isVisible {
-            if type == .leftMouseDown || type == .rightMouseDown {
+            if matchesShortcut(.toggleOverlay, keyCode: keyCode, flags: event.flags) {
                 clearOverlaySelection()
-                return Unmanaged.passUnretained(event)
+                hideOverlay()
+                return nil
             }
-            if type == .keyDown {
-                if matchesHotkeyModifiers(event.flags), keyCode == KeyCode.t {
-                    clearOverlaySelection()
-                    hideOverlay()
-                    return nil
-                }
-                return handleOverlayKey(event: event, keyCode: keyCode)
-            }
-            return Unmanaged.passUnretained(event)
+            return handleOverlayKey(event: event, keyCode: keyCode)
         }
 
-        guard matchesHotkeyModifiers(event.flags) else {
-            return Unmanaged.passUnretained(event)
-        }
-
-        switch keyCode {
-        case KeyCode.leftArrow:
-            windowManager.tileLeft()
-            return nil
-        case KeyCode.rightArrow:
-            windowManager.tileRight()
-            return nil
-        case KeyCode.upArrow:
-            windowManager.maximize()
-            return nil
-        case KeyCode.t:
+        if matchesShortcut(.toggleOverlay, keyCode: keyCode, flags: event.flags) {
             clearOverlaySelection()
             if let screen = windowManager.focusedScreen() ?? NSScreen.main {
                 let layout = currentLayout(for: screen)
@@ -124,9 +119,22 @@ final class HotkeyManager {
                 overlayController.show(on: screen, selection: selection, layout: layout)
             }
             return nil
-        default:
-            return Unmanaged.passUnretained(event)
         }
+
+        if matchesShortcut(.tileLeft, keyCode: keyCode, flags: event.flags) {
+            windowManager.tileLeft()
+            return nil
+        }
+        if matchesShortcut(.tileRight, keyCode: keyCode, flags: event.flags) {
+            windowManager.tileRight()
+            return nil
+        }
+        if matchesShortcut(.maximize, keyCode: keyCode, flags: event.flags) {
+            windowManager.maximize()
+            return nil
+        }
+
+        return Unmanaged.passUnretained(event)
     }
 
     private func handleOverlayKey(event: CGEvent, keyCode: CGKeyCode) -> Unmanaged<CGEvent>? {
@@ -161,21 +169,9 @@ final class HotkeyManager {
         }
     }
 
-    private func matchesHotkeyModifiers(_ flags: CGEventFlags) -> Bool {
-        return matchesModifiers(flags, required: Settings.hotkeyModifiers)
-    }
-
-    private func matchesLayoutSelectionModifiers(_ flags: CGEventFlags) -> Bool {
-        return matchesModifiers(flags, required: Settings.layoutSelectionModifiers)
-    }
-
-    private func matchesModifiers(_ flags: CGEventFlags, required: CGEventFlags) -> Bool {
-        let relevant: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl, .maskShift]
-        let filtered = flags.intersection(relevant)
-        if Settings.allowAdditionalModifiers {
-            return filtered.contains(required)
-        }
-        return filtered == required
+    private func matchesShortcut(_ action: ShortcutAction, keyCode: CGKeyCode, flags: CGEventFlags) -> Bool {
+        guard let shortcut = shortcutsState.shortcuts[action] else { return false }
+        return shortcut.matches(keyCode: keyCode, flags: flags, allowAdditional: Settings.allowAdditionalModifiers)
     }
 
     private func currentLayout(for screen: NSScreen?) -> LayoutPreset {
