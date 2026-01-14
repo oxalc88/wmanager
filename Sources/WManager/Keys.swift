@@ -14,10 +14,16 @@ enum KeyCode {
     static let a: CGKeyCode = 0
     static let s: CGKeyCode = 1
     static let d: CGKeyCode = 2
+    static let f: CGKeyCode = 3
     static let q: CGKeyCode = 12
     static let w: CGKeyCode = 13
     static let e: CGKeyCode = 14
+    static let r: CGKeyCode = 15
     static let t: CGKeyCode = 17
+    static let z: CGKeyCode = 6
+    static let x: CGKeyCode = 7
+    static let c: CGKeyCode = 8
+    static let v: CGKeyCode = 9
 
     static let leftArrow: CGKeyCode = 123
     static let rightArrow: CGKeyCode = 124

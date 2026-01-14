@@ -1,11 +1,11 @@
 import Cocoa
 
 final class OverlayView: NSView {
-    var slots: [Slot: CGRect] = [:] {
+    var cellFrames: [GridCell: CGRect] = [:] {
         didSet { needsDisplay = true }
     }
 
-    var selection: Set<Slot> = [] {
+    var selection: Set<GridCell> = [] {
         didSet { needsDisplay = true }
     }
 
@@ -15,10 +15,10 @@ final class OverlayView: NSView {
         Settings.overlayBackgroundColor.setFill()
         dirtyRect.fill()
 
-        for slot in Slot.allCases {
-            guard let rect = slots[slot] else { continue }
+        for cell in GridCell.all {
+            guard let rect = cellFrames[cell] else { continue }
 
-            if selection.contains(slot) {
+            if selection.contains(cell) {
                 Settings.overlayHighlightColor.setFill()
                 rect.fill()
             }
@@ -28,7 +28,7 @@ final class OverlayView: NSView {
             Settings.overlayLineColor.setStroke()
             outline.stroke()
 
-            drawLabel(slot.label, in: rect)
+            drawLabel(cell.label, in: rect)
         }
     }
 

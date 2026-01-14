@@ -2,7 +2,7 @@ import CoreGraphics
 
 enum OverlayKeyAction: Equatable {
     case dismiss
-    case slot(Slot)
+    case cell(GridCell)
     case passthrough
 
     static func action(for keyCode: CGKeyCode) -> OverlayKeyAction {
@@ -10,8 +10,8 @@ enum OverlayKeyAction: Equatable {
             return .dismiss
         }
 
-        if let slot = Slot.fromKeyCode(keyCode) {
-            return .slot(slot)
+        if let cell = GridCell.cell(for: keyCode) {
+            return .cell(cell)
         }
 
         return .passthrough

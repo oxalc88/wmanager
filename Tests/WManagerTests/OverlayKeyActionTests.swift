@@ -8,8 +8,8 @@ final class OverlayKeyActionTests: XCTestCase {
     }
 
     func testSlotKeys() {
-        XCTAssertEqual(OverlayKeyAction.action(for: KeyCode.q), .slot(.topLeft))
-        XCTAssertEqual(OverlayKeyAction.action(for: KeyCode.a), .slot(.bottomLeft))
+        XCTAssertEqual(OverlayKeyAction.action(for: KeyCode.q), .cell(GridCell.cell(row: 0, column: 0)!))
+        XCTAssertEqual(OverlayKeyAction.action(for: KeyCode.a), .cell(GridCell.cell(row: 1, column: 0)!))
     }
 
     func testPassthroughKeys() {

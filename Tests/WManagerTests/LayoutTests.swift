@@ -17,21 +17,22 @@ final class LayoutTests: XCTestCase {
 
     func testSlotFramesLayout() {
         let frame = CGRect(x: 0, y: 0, width: 1200, height: 800)
-        let slots = Slot.frames(in: frame)
+        let layout = LayoutPreset.defaultPreset()
+        let frames = LayoutEngine.frames(in: frame, layout: layout)
 
-        let expectedTopLeft = CGRect(x: 8, y: 404, width: 292, height: 388)
-        let expectedTopCenter = CGRect(x: 308, y: 404, width: 584, height: 388)
-        let expectedTopRight = CGRect(x: 900, y: 404, width: 292, height: 388)
-        let expectedBottomLeft = CGRect(x: 8, y: 8, width: 292, height: 388)
-        let expectedBottomCenter = CGRect(x: 308, y: 8, width: 584, height: 388)
-        let expectedBottomRight = CGRect(x: 900, y: 8, width: 292, height: 388)
+        let expectedTopLeft = CGRect(x: 8, y: 404, width: 389.33, height: 388)
+        let expectedTopCenter = CGRect(x: 405.33, y: 404, width: 389.33, height: 388)
+        let expectedTopRight = CGRect(x: 802.67, y: 404, width: 389.33, height: 388)
+        let expectedBottomLeft = CGRect(x: 8, y: 8, width: 389.33, height: 388)
+        let expectedBottomCenter = CGRect(x: 405.33, y: 8, width: 389.33, height: 388)
+        let expectedBottomRight = CGRect(x: 802.67, y: 8, width: 389.33, height: 388)
 
-        assertRectEqual(slots[.topLeft], expectedTopLeft)
-        assertRectEqual(slots[.topCenter], expectedTopCenter)
-        assertRectEqual(slots[.topRight], expectedTopRight)
-        assertRectEqual(slots[.bottomLeft], expectedBottomLeft)
-        assertRectEqual(slots[.bottomCenter], expectedBottomCenter)
-        assertRectEqual(slots[.bottomRight], expectedBottomRight)
+        assertRectEqual(frames[GridCell.cell(row: 0, column: 0)!], expectedTopLeft)
+        assertRectEqual(frames[GridCell.cell(row: 0, column: 1)!], expectedTopCenter)
+        assertRectEqual(frames[GridCell.cell(row: 0, column: 2)!], expectedTopRight)
+        assertRectEqual(frames[GridCell.cell(row: 1, column: 0)!], expectedBottomLeft)
+        assertRectEqual(frames[GridCell.cell(row: 1, column: 1)!], expectedBottomCenter)
+        assertRectEqual(frames[GridCell.cell(row: 1, column: 2)!], expectedBottomRight)
     }
 }
 

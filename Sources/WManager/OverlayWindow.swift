@@ -20,18 +20,18 @@ final class OverlayWindow: NSWindow {
         contentView = overlayView
     }
 
-    func show(on screen: NSScreen, selection: Set<Slot>) {
+    func show(on screen: NSScreen, selection: Set<GridCell>, layout: LayoutPreset) {
         let frame = screen.visibleFrame
         let localFrame = CGRect(origin: .zero, size: frame.size)
-        let slots = Slot.frames(in: localFrame)
+        let frames = LayoutEngine.frames(in: localFrame, layout: layout)
 
         setFrame(frame, display: true)
-        overlayView.slots = slots
+        overlayView.cellFrames = frames
         overlayView.selection = selection
         orderFrontRegardless()
     }
 
-    func updateSelection(_ selection: Set<Slot>) {
+    func updateSelection(_ selection: Set<GridCell>) {
         overlayView.selection = selection
     }
 }

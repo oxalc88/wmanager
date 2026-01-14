@@ -1,10 +1,19 @@
 import Cocoa
+import ApplicationServices
 
 final class WindowManager {
     func focusedScreen() -> NSScreen? {
         guard let window = focusedWindow() else { return nil }
         guard let frame = windowFrame(window) else { return nil }
         return screenForWindow(frame)
+    }
+
+    func focusedWindowID() -> CGWindowID? {
+        guard let window = focusedWindow() else { return nil }
+        if let windowID = axWindowNumber(from: window) {
+            return windowID
+        }
+        return matchingWindowID(from: window)
     }
 
     func tileLeft() {
@@ -25,15 +34,15 @@ final class WindowManager {
         applyFrame(frame, to: target.window, screenFrame: target.screen.frame)
     }
 
-    func applySlots(_ slots: Set<Slot>) {
-        guard !slots.isEmpty else { return }
+    func applyCells(_ cells: Set<GridCell>, layout: LayoutPreset) {
+        guard !cells.isEmpty else { return }
         guard let target = focusedWindowTarget() else { return }
 
-        let frames = Slot.frames(in: target.visibleFrame)
+        let frames = LayoutEngine.frames(in: target.visibleFrame, layout: layout)
         var union = CGRect.null
-        for slot in slots {
-            guard let slotFrame = frames[slot] else { continue }
-            union = union.union(slotFrame)
+        for cell in cells {
+            guard let cellFrame = frames[cell] else { continue }
+            union = union.union(cellFrame)
         }
 
         if !union.isNull {
@@ -74,6 +83,61 @@ final class WindowManager {
         return nil
     }
 
+    private func axWindowNumber(from window: AXUIElement) -> CGWindowID? {
+        var windowNumber: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(
+            window,
+            "AXWindowNumber" as CFString,
+            &windowNumber
+        )
+        guard result == .success, let number = windowNumber as? NSNumber else { return nil }
+        return CGWindowID(number.uint32Value)
+    }
+
+    private func matchingWindowID(from window: AXUIElement) -> CGWindowID? {
+        var pid: pid_t = 0
+        AXUIElementGetPid(window, &pid)
+        guard pid != 0 else { return nil }
+        guard let axFrame = windowFrame(window) else { return nil }
+        guard let screen = screenForWindow(axFrame) else { return nil }
+        let cocoaFrame = cocoaFrame(fromAX: axFrame, in: screen.frame)
+
+        guard let infoList = CGWindowListCopyWindowInfo(
+            [.excludeDesktopElements, .optionOnScreenOnly],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
+            return nil
+        }
+
+        let tolerance: CGFloat = 8
+        var bestMatch: (id: CGWindowID, score: CGFloat)?
+        for info in infoList {
+            guard let ownerPID = info[kCGWindowOwnerPID as String] as? NSNumber,
+                  ownerPID.intValue == pid else {
+                continue
+            }
+            if let layer = info[kCGWindowLayer as String] as? NSNumber,
+               layer.intValue != 0 {
+                continue
+            }
+            guard let bounds = cgRect(from: info[kCGWindowBounds as String]) else {
+                continue
+            }
+            guard let number = info[kCGWindowNumber as String] as? NSNumber else { continue }
+
+            let sizeDelta = abs(bounds.width - cocoaFrame.width) + abs(bounds.height - cocoaFrame.height)
+            let originDelta = abs(bounds.minX - cocoaFrame.minX) + abs(bounds.minY - cocoaFrame.minY)
+            let score = (sizeDelta * 2) + originDelta
+            if sizeDelta <= tolerance * 2 {
+                if bestMatch == nil || score < bestMatch!.score {
+                    bestMatch = (CGWindowID(number.uint32Value), score)
+                }
+            }
+        }
+
+        return bestMatch?.id
+    }
+
     private func windowFrame(_ window: AXUIElement) -> CGRect? {
         var positionValue: CFTypeRef?
         var sizeValue: CFTypeRef?
@@ -100,6 +164,11 @@ final class WindowManager {
         return CGRect(origin: position, size: size)
     }
 
+    private func cocoaFrame(fromAX frame: CGRect, in screenFrame: CGRect) -> CGRect {
+        let flippedY = screenFrame.maxY - frame.maxY
+        return CGRect(x: frame.minX, y: flippedY, width: frame.width, height: frame.height)
+    }
+
     private func applyFrame(_ frame: CGRect, to window: AXUIElement, screenFrame: CGRect) {
         let axFrame = WindowCoordinateConverter.axFrame(fromCocoa: frame, in: screenFrame)
         var position = axFrame.origin
@@ -116,6 +185,33 @@ final class WindowManager {
     private func screenForWindow(_ frame: CGRect) -> NSScreen? {
         let center = CGPoint(x: frame.midX, y: frame.midY)
         return NSScreen.screens.first { $0.frame.contains(center) } ?? NSScreen.main
+    }
+
+    private func cgRect(from value: Any?) -> CGRect? {
+        guard let dict = value as? [String: Any] else { return nil }
+        guard let x = cgFloat(dict["X"]),
+              let y = cgFloat(dict["Y"]),
+              let width = cgFloat(dict["Width"]),
+              let height = cgFloat(dict["Height"]) else {
+            return nil
+        }
+        return CGRect(x: x, y: y, width: width, height: height)
+    }
+
+    private func cgFloat(_ value: Any?) -> CGFloat? {
+        if let number = value as? NSNumber {
+            return CGFloat(truncating: number)
+        }
+        if let value = value as? CGFloat {
+            return value
+        }
+        if let value = value as? Double {
+            return CGFloat(value)
+        }
+        if let value = value as? Int {
+            return CGFloat(value)
+        }
+        return nil
     }
 }
 

@@ -5,8 +5,8 @@ enum Settings {
     static let hotkeyModifiers: CGEventFlags = [.maskCommand, .maskAlternate]
     static let allowAdditionalModifiers = false
 
-    static let desktopMoveModifiers: CGEventFlags = [.maskControl, .maskShift]
-    static let desktopCount = 5
+    static let layoutSelectionModifiers: CGEventFlags = [.maskControl, .maskShift]
+    static let layoutPresetCount = 4
 
     static let overlayAutoHideSeconds: TimeInterval? = nil
     static let overlaySelectionMaxCount: Int? = 2

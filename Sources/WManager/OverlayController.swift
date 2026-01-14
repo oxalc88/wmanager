@@ -8,12 +8,12 @@ final class OverlayController {
         overlayWindow.isVisible
     }
 
-    func show(on screen: NSScreen, selection: Set<Slot>) {
-        overlayWindow.show(on: screen, selection: selection)
+    func show(on screen: NSScreen, selection: Set<GridCell>, layout: LayoutPreset) {
+        overlayWindow.show(on: screen, selection: selection, layout: layout)
         scheduleHide()
     }
 
-    func updateSelection(_ selection: Set<Slot>) {
+    func updateSelection(_ selection: Set<GridCell>) {
         overlayWindow.updateSelection(selection)
         scheduleHide()
     }

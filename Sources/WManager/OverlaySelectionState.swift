@@ -1,15 +1,15 @@
 import Foundation
 
 struct OverlaySelectionState {
-    private(set) var selection: Set<Slot> = []
+    private(set) var selection: Set<GridCell> = []
 
-    mutating func select(_ slot: Slot) -> Set<Slot> {
-        selection.insert(slot)
+    mutating func select(_ cell: GridCell) -> Set<GridCell> {
+        selection.insert(cell)
         return selection
     }
 
-    mutating func select(_ slot: Slot, maxSelectionCount: Int?) -> (selection: Set<Slot>, reachedLimit: Bool) {
-        selection.insert(slot)
+    mutating func select(_ cell: GridCell, maxSelectionCount: Int?) -> (selection: Set<GridCell>, reachedLimit: Bool) {
+        selection.insert(cell)
         let reachedLimit: Bool
         if let maxSelectionCount, maxSelectionCount > 0 {
             reachedLimit = selection.count >= maxSelectionCount

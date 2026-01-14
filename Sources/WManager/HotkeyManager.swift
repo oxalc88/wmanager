@@ -6,8 +6,12 @@ final class HotkeyManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var overlaySelection = OverlaySelectionState()
+    private var overlayLayout: LayoutPreset?
 
-    init(windowManager: WindowManager, overlayController: OverlayController) {
+    init(
+        windowManager: WindowManager,
+        overlayController: OverlayController
+    ) {
         self.windowManager = windowManager
         self.overlayController = overlayController
     }
@@ -47,6 +51,8 @@ final class HotkeyManager {
     }
 
     func stop() {
+        clearOverlaySelection()
+        hideOverlay()
         if let runLoopSource = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
         }
@@ -66,24 +72,34 @@ final class HotkeyManager {
             return Unmanaged.passUnretained(event)
         }
 
+        let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+
+        if matchesLayoutSelectionModifiers(event.flags),
+           let layoutIndex = LayoutHotkeyMapping.layoutIndex(
+                for: keyCode,
+                layoutCount: Settings.layoutPresetCount
+           ) {
+            setActiveLayout(index: layoutIndex)
+            clearOverlaySelection()
+            hideOverlay()
+            return nil
+        }
+
         if overlayController.isVisible {
             if type == .leftMouseDown || type == .rightMouseDown {
                 clearOverlaySelection()
                 return Unmanaged.passUnretained(event)
             }
             if type == .keyDown {
-                let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
                 if matchesHotkeyModifiers(event.flags), keyCode == KeyCode.t {
                     clearOverlaySelection()
-                    overlayController.hide()
+                    hideOverlay()
                     return nil
                 }
                 return handleOverlayKey(event: event, keyCode: keyCode)
             }
             return Unmanaged.passUnretained(event)
         }
-
-        let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
 
         guard matchesHotkeyModifiers(event.flags) else {
             return Unmanaged.passUnretained(event)
@@ -102,7 +118,10 @@ final class HotkeyManager {
         case KeyCode.t:
             clearOverlaySelection()
             if let screen = windowManager.focusedScreen() ?? NSScreen.main {
-                overlayController.show(on: screen, selection: overlaySelection.selection)
+                let layout = currentLayout(for: screen)
+                let selection = overlaySelection.selection.intersection(LayoutEngine.activeCells(for: layout))
+                overlayLayout = layout
+                overlayController.show(on: screen, selection: selection, layout: layout)
             }
             return nil
         default:
@@ -114,14 +133,18 @@ final class HotkeyManager {
         switch OverlayKeyAction.action(for: keyCode) {
         case .dismiss:
             clearOverlaySelection()
-            overlayController.hide()
+            hideOverlay()
             return nil
-        case .slot(let slot):
-            let result = overlaySelection.select(slot, maxSelectionCount: Settings.overlaySelectionMaxCount)
+        case .cell(let cell):
+            let layout = overlayLayout ?? currentLayout(for: windowManager.focusedScreen())
+            guard LayoutEngine.activeCells(for: layout).contains(cell) else {
+                return Unmanaged.passUnretained(event)
+            }
+            let result = overlaySelection.select(cell, maxSelectionCount: Settings.overlaySelectionMaxCount)
             overlayController.updateSelection(result.selection)
-            windowManager.applySlots(result.selection)
+            windowManager.applyCells(result.selection, layout: layout)
             if result.reachedLimit {
-                overlayController.hide()
+                hideOverlay()
                 overlaySelection.clear()
             }
             return nil
@@ -139,11 +162,33 @@ final class HotkeyManager {
     }
 
     private func matchesHotkeyModifiers(_ flags: CGEventFlags) -> Bool {
+        return matchesModifiers(flags, required: Settings.hotkeyModifiers)
+    }
+
+    private func matchesLayoutSelectionModifiers(_ flags: CGEventFlags) -> Bool {
+        return matchesModifiers(flags, required: Settings.layoutSelectionModifiers)
+    }
+
+    private func matchesModifiers(_ flags: CGEventFlags, required: CGEventFlags) -> Bool {
         let relevant: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl, .maskShift]
         let filtered = flags.intersection(relevant)
         if Settings.allowAdditionalModifiers {
-            return filtered.contains(Settings.hotkeyModifiers)
+            return filtered.contains(required)
         }
-        return filtered == Settings.hotkeyModifiers
+        return filtered == required
+    }
+
+    private func currentLayout(for screen: NSScreen?) -> LayoutPreset {
+        return LayoutStore.currentLayoutPreset(for: screen)
+    }
+
+    private func setActiveLayout(index: Int) {
+        let screen = windowManager.focusedScreen() ?? NSScreen.main ?? NSScreen.screens.first
+        LayoutStore.setActiveLayoutIndex(index, for: screen)
+    }
+
+    private func hideOverlay() {
+        overlayController.hide()
+        overlayLayout = nil
     }
 }
