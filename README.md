@@ -5,9 +5,10 @@ utility: global hotkeys, simple layouts, no window tracking daemon.
 
 ## What it does
 - Two-way tiling (left, right, maximize) similar to GNOME.
-- A 6-slot "Tactile" grid (Q/W/E/A/S/D) with optional spanning by pressing
-  multiple slots in sequence.
+- A configurable "Tactile" grid with up to 4 columns x 3 rows (Q/W/E/R,
+  A/S/D/F, Z/X/C/V) and optional spanning by pressing multiple slots in sequence.
 - A lightweight overlay to preview the grid.
+- Layout presets with per-desktop or global selection.
 
 ## Requirements
 - macOS 13+ (per `Package.swift`).
@@ -52,8 +53,9 @@ the LaunchAgent points at the correct binary path.
 - Command + Option + Left: left half
 - Command + Option + Right: right half
 - Command + Option + Up: maximize (within the visible frame)
-- Command + Option + T: toggle the 6-slot grid (Esc to dismiss)
-- Q/W/E/A/S/D: choose slots while the grid is visible
+- Command + Option + T: toggle the grid (Esc to dismiss)
+- Control + Shift + 1..4: select the active layout preset for the current desktop
+- Q/W/E/R/A/S/D/F/Z/X/C/V: choose slots while the grid is visible (based on layout)
 - Enter: dismiss the grid
 - Escape: dismiss the grid
 
@@ -64,6 +66,12 @@ The grid auto-closes after selecting two slots by default; adjust
 different limit or `nil` for no limit.
 
 You can change modifiers, gaps, and colors in `Sources/WManager/Settings.swift`.
+
+## Layout settings
+Open the status bar menu and choose Settings... to configure layout presets,
+column/row weights, and whether layouts apply per desktop or globally.
+Use Control + Shift + 1..4 to switch presets; with per-desktop layouts enabled,
+the selection is stored per Space.
 
 ## Notes
 - Some windows do not allow resizing or have minimum sizes.
