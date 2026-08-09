@@ -3,6 +3,47 @@ import Darwin
 
 enum DesktopManager {
     static func currentSpaceID(for screen: NSScreen?) -> CGSSpaceID? {
+        guard let displayEntry = displayEntry(for: screen) else { return nil }
+        return currentSpaceID(from: displayEntry)
+    }
+
+    static func orderedSpaceIDs(for screen: NSScreen?) -> [CGSSpaceID] {
+        guard let displayEntry = displayEntry(for: screen) else { return [] }
+        return userSpaceIDs(from: displayEntry)
+    }
+
+    static func switchToSpace(at index: Int, for screen: NSScreen?) {
+        let spaceIDs = orderedSpaceIDs(for: screen)
+        guard index >= 0, index < spaceIDs.count else { return }
+        let targetSpaceID = spaceIDs[index]
+        guard let connection = SkyLightAPI.mainConnectionID() else { return }
+
+        let targetScreen = screen ?? NSScreen.main ?? NSScreen.screens.first
+        guard let targetScreen, let displayUUID = displayUUID(for: targetScreen) else { return }
+
+        guard let setCurrentSpace = SkyLightAPI.managedDisplaySetCurrentSpace() else {
+            NSLog("DesktopManager: CGSManagedDisplaySetCurrentSpace not available")
+            return
+        }
+        setCurrentSpace(connection, displayUUID, targetSpaceID)
+    }
+
+    static func moveWindow(_ windowID: CGWindowID, toSpaceAt index: Int, for screen: NSScreen?) {
+        let spaceIDs = orderedSpaceIDs(for: screen)
+        guard index >= 0, index < spaceIDs.count else { return }
+        let targetSpaceID = spaceIDs[index]
+        guard let connection = SkyLightAPI.mainConnectionID() else { return }
+
+        guard let moveWindow = SkyLightAPI.moveWindowToManagedSpace() else {
+            NSLog("DesktopManager: CGSMoveWindowToManagedSpace not available")
+            return
+        }
+        moveWindow(connection, windowID, targetSpaceID)
+    }
+
+    // MARK: - Private helpers
+
+    private static func displayEntry(for screen: NSScreen?) -> [String: Any]? {
         guard let connection = SkyLightAPI.mainConnectionID(),
               let copySpaces = SkyLightAPI.copyManagedDisplaySpaces() else {
             return nil
@@ -18,18 +59,20 @@ enum DesktopManager {
         } else {
             displayIdentifierValue = nil
         }
-        let displayEntry = managedSpaces.first { entry in
+        return managedSpaces.first { entry in
             guard let entryIdentifier = entry["Display Identifier"] as? String else { return false }
             return entryIdentifier == displayIdentifierValue
         } ?? managedSpaces.first
+    }
 
-        if let current = displayEntry?["Current Space"] {
+    private static func currentSpaceID(from displayEntry: [String: Any]) -> CGSSpaceID? {
+        if let current = displayEntry["Current Space"] {
             if let spaceID = managedSpaceID(from: current) {
                 return spaceID
             }
         }
 
-        let spacesValue = displayEntry?["Spaces"]
+        let spacesValue = displayEntry["Spaces"]
         if let spaces = spacesValue as? [[String: Any]] {
             if let current = spaces.first(where: { ($0["Current Space"] as? NSNumber)?.boolValue == true }) {
                 return managedSpaceID(from: current)
@@ -40,6 +83,20 @@ enum DesktopManager {
         }
 
         return nil
+    }
+
+    static func userSpaceIDs(from displayEntry: [String: Any]) -> [CGSSpaceID] {
+        guard let spaces = displayEntry["Spaces"] as? [[String: Any]] else { return [] }
+        var result: [CGSSpaceID] = []
+        for space in spaces {
+            let spaceType = space["type"] as? NSNumber
+            if spaceType?.intValue == 0 {
+                if let id = managedSpaceID(from: space) {
+                    result.append(id)
+                }
+            }
+        }
+        return result
     }
 
     private static func managedSpaceID(from value: Any) -> CGSSpaceID? {
@@ -79,11 +136,22 @@ enum DesktopManager {
         guard let uuid = CGDisplayCreateUUIDFromDisplayID(displayID) else { return nil }
         return CFUUIDCreateString(kCFAllocatorDefault, uuid.takeRetainedValue()) as String
     }
+
+    private static func displayUUID(for screen: NSScreen) -> CFString? {
+        guard let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+            return nil
+        }
+        let displayID = CGDirectDisplayID(screenNumber.uint32Value)
+        guard let uuid = CGDisplayCreateUUIDFromDisplayID(displayID) else { return nil }
+        return CFUUIDCreateString(kCFAllocatorDefault, uuid.takeRetainedValue())
+    }
 }
 
 private enum SkyLightAPI {
     typealias CGSMainConnectionIDFunc = @convention(c) () -> CGSConnectionID
     typealias CGSCopyManagedDisplaySpacesFunc = @convention(c) (CGSConnectionID) -> CFArray
+    typealias CGSManagedDisplaySetCurrentSpaceFunc = @convention(c) (CGSConnectionID, CFString, CGSSpaceID) -> Void
+    typealias CGSMoveWindowToManagedSpaceFunc = @convention(c) (CGSConnectionID, CGWindowID, CGSSpaceID) -> Void
 
     private static let handles: [UnsafeMutableRawPointer] = {
         let paths = [
@@ -111,6 +179,20 @@ private enum SkyLightAPI {
 
     static func copyManagedDisplaySpaces() -> CGSCopyManagedDisplaySpacesFunc? {
         return loadAny(["CGSCopyManagedDisplaySpaces", "SLSCopyManagedDisplaySpaces"], as: CGSCopyManagedDisplaySpacesFunc.self)
+    }
+
+    static func managedDisplaySetCurrentSpace() -> CGSManagedDisplaySetCurrentSpaceFunc? {
+        return loadAny(
+            ["CGSManagedDisplaySetCurrentSpace", "SLSManagedDisplaySetCurrentSpace"],
+            as: CGSManagedDisplaySetCurrentSpaceFunc.self
+        )
+    }
+
+    static func moveWindowToManagedSpace() -> CGSMoveWindowToManagedSpaceFunc? {
+        return loadAny(
+            ["CGSMoveWindowToManagedSpace", "SLSMoveWindowToManagedSpace"],
+            as: CGSMoveWindowToManagedSpaceFunc.self
+        )
     }
 
     private static func loadAny<T>(_ names: [String], as type: T.Type) -> T? {

@@ -89,10 +89,16 @@ final class HotkeyManager {
         }
 
         let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+        let flags = event.flags
+
+        if let desktopAction = DesktopHotkeyMapping.match(keyCode: keyCode, flags: flags) {
+            handleDesktopAction(desktopAction)
+            return nil
+        }
 
         if let layoutIndex = shortcutsState.layoutIndex(
             for: keyCode,
-            flags: event.flags,
+            flags: flags,
             allowAdditional: Settings.allowAdditionalModifiers
         ) {
             setActiveLayout(index: layoutIndex)
@@ -102,7 +108,7 @@ final class HotkeyManager {
         }
 
         if overlayController.isVisible {
-            if matchesShortcut(.toggleOverlay, keyCode: keyCode, flags: event.flags) {
+            if matchesShortcut(.toggleOverlay, keyCode: keyCode, flags: flags) {
                 clearOverlaySelection()
                 hideOverlay()
                 return nil
@@ -110,7 +116,7 @@ final class HotkeyManager {
             return handleOverlayKey(event: event, keyCode: keyCode)
         }
 
-        if matchesShortcut(.toggleOverlay, keyCode: keyCode, flags: event.flags) {
+        if matchesShortcut(.toggleOverlay, keyCode: keyCode, flags: flags) {
             clearOverlaySelection()
             if let screen = windowManager.focusedScreen() ?? NSScreen.main {
                 let layout = currentLayout(for: screen)
@@ -121,20 +127,32 @@ final class HotkeyManager {
             return nil
         }
 
-        if matchesShortcut(.tileLeft, keyCode: keyCode, flags: event.flags) {
+        if matchesShortcut(.tileLeft, keyCode: keyCode, flags: flags) {
             windowManager.tileLeft()
             return nil
         }
-        if matchesShortcut(.tileRight, keyCode: keyCode, flags: event.flags) {
+        if matchesShortcut(.tileRight, keyCode: keyCode, flags: flags) {
             windowManager.tileRight()
             return nil
         }
-        if matchesShortcut(.maximize, keyCode: keyCode, flags: event.flags) {
+        if matchesShortcut(.maximize, keyCode: keyCode, flags: flags) {
             windowManager.maximize()
             return nil
         }
 
         return Unmanaged.passUnretained(event)
+    }
+
+    private func handleDesktopAction(_ action: DesktopHotkeyMapping.Action) {
+        let screen = windowManager.focusedScreen() ?? NSScreen.main
+        switch action {
+        case .switchToDesktop(let index):
+            DesktopManager.switchToSpace(at: index, for: screen)
+        case .moveToDesktop(let index):
+            guard let windowID = windowManager.focusedWindowID() else { return }
+            DesktopManager.moveWindow(windowID, toSpaceAt: index, for: screen)
+            DesktopManager.switchToSpace(at: index, for: screen)
+        }
     }
 
     private func handleOverlayKey(event: CGEvent, keyCode: CGKeyCode) -> Unmanaged<CGEvent>? {
